@@ -43,7 +43,7 @@ From your browser, navigate to the [adena.app](https://www.adena.app/#download) 
 
 You will see page like this:
 
-![Adena Platforms](./adena-download.png)
+![Adena Platforms](https://raw.githubusercontent.com/gnoverse/gnome-content/refs/heads/main/assets/tutorials/installing-adena-wallet/adena-download.png)
 
 Select your platform.
 
@@ -51,20 +51,20 @@ Select your platform.
 
 While the exact steps may vary slightly depending on the browser you are using, the installation page should look similar to the one shown here. Follow the on-screen prompts to successfully complete the installation.
 
-![Install Adena on Brave](./install-adena-on-brave.png)
+![Install Adena on Brave](https://raw.githubusercontent.com/gnoverse/gnome-content/refs/heads/main/assets/tutorials/installing-adena-wallet/install-adena-on-brave.png)
 
 
 After installation, the welcome screen appears
 
-![Adena Welcome #1](./adena-welcome-1.png)
+![Adena Welcome #1](https://raw.githubusercontent.com/gnoverse/gnome-content/refs/heads/main/assets/tutorials/installing-adena-wallet/adena-welcome-1.png)
 
 The welcome screen provides an explanation of the main three options, _Hardware Wallet_, _Airgap Account_, and _Advanced Options_.
 
 Click on _I got it_, and step through the next steps.
 
-![Adena Welcome #2](./adena-welcome-2.png)
+![Adena Welcome #2](https://raw.githubusercontent.com/gnoverse/gnome-content/refs/heads/main/assets/tutorials/installing-adena-wallet/adena-welcome-2.png)
 
-![Adena Welcome #3](./adena-welcome-3.png)
+![Adena Welcome #3](https://raw.githubusercontent.com/gnoverse/gnome-content/refs/heads/main/assets/tutorials/installing-adena-wallet/adena-welcome-3.png)
 
 ## **Creating Your gno.land Account**
 
@@ -78,13 +78,13 @@ Adena is very security focused, and the more secure options are to have a hardwa
 
 Because of the security focus of Adena, this option exists within _Advanced Options_. Click on it.
 
-![Adena Welcome #3](./adena-options.png)
+![Adena Welcome #3](https://raw.githubusercontent.com/gnoverse/gnome-content/refs/heads/main/assets/tutorials/installing-adena-wallet/adena-options.png)
 
 ### **Step 2: Advanced Options**
 
 Adena will provide three options. You can create a new wallet, import a wallet, or Sign in With Google. We are going to choose the first option, _Create New Wallet_, but the _Sign in With Google_ options is worth mentioning. It will create a wallet based on Google Open Authentication, which can be very useful. After completing this tutorial, consider going back and exploring this option yourself.
 
-![Advanced Options](./advanced-options.png)
+![Advanced Options](https://raw.githubusercontent.com/gnoverse/gnome-content/refs/heads/main/assets/tutorials/installing-adena-wallet/advanced-options.png)
 
 Click on the _Create New Wallet_ option.
 
@@ -94,19 +94,19 @@ Adena is going to walk you through a simple instructional quiz to ensure that yo
 
 It starts with this screen:
 
-![pass-the-quiz-1](./pass-the-quiz-1.png)
+![pass-the-quiz-1](https://raw.githubusercontent.com/gnoverse/gnome-content/refs/heads/main/assets/tutorials/installing-adena-wallet/pass-the-quiz-1.png)
 
 Press the _Next_ link.
 
 #### **Complete a Questionaire**
 
-![Complete a Questionaire](./pass-the-quiz-2.png)
+![Complete a Questionaire](https://raw.githubusercontent.com/gnoverse/gnome-content/refs/heads/main/assets/tutorials/installing-adena-wallet/pass-the-quiz-2.png)
 
 Click _Next_.
 
 #### Who Can Recover Your Seed Phrase or Private Key?
 
-![Who Can Recover Your Seed Phrase or Private Key?](./pass-the-quiz-3.png)
+![Who Can Recover Your Seed Phrase or Private Key?](https://raw.githubusercontent.com/gnoverse/gnome-content/refs/heads/main/assets/tutorials/installing-adena-wallet/pass-the-quiz-3.png)
 
 Because all of your security depends on keeping your seed phrase and private key safe, there is no capability for anyone else to recover it for you. Ensure that you don't forget it or lose it.
 
@@ -114,7 +114,7 @@ Click _Nobody_ and then press _Next_.
 
 #### Security Questionnaire About Adena Support
 
-![Security Questionnaire About Adena Support](./pass-the-quiz-4.png)
+![Security Questionnaire About Adena Support](https://raw.githubusercontent.com/gnoverse/gnome-content/refs/heads/main/assets/tutorials/installing-adena-wallet/pass-the-quiz-4.png)
 
 This question asks you how you should interact with Adena Support. Refer back to the previous question. Your wallet's security completely depends on the sanctity of your seed phrase and private key. Adena Support would never ask for this information. If anybody asks for it, ignore the request and end the conversation.
 
@@ -122,7 +122,7 @@ Click _Ignore the request and end the conversation_ and then press _Next_.
 
 #### Security Questionnaire About Safe Storage
 
-![Security Questionnaire About Sage Storage](./pass-the-quiz-5.png)
+![Security Questionnaire About Sage Storage](https://raw.githubusercontent.com/gnoverse/gnome-content/refs/heads/main/assets/tutorials/installing-adena-wallet/pass-the-quiz-5.png)
 
 This question is asking about safe storage for your seed phrase. Remember that nobody can recover this for you, so it is important that you remember it. However, because security of your seed phrase is crucial, the safe storage of that seed phrase is crucial. It is up to you to determine the best way to do this, but it must be a secure offline environment in order to maintain the highest level of security.
 
@@ -130,7 +130,7 @@ Click _A Secure Offline Environment_ and press _Next_.
 
 #### You've Completed the Questionnaire
 
-![You've Passed the Security Questionnaire](./pass-the-quiz-6.png)
+![You've Passed the Security Questionnaire](https://raw.githubusercontent.com/gnoverse/gnome-content/refs/heads/main/assets/tutorials/installing-adena-wallet/pass-the-quiz-6.png)
 
 Congratulations, you understand the basic steps needed to keep your data safe. Let's finish making your account.
 
@@ -140,11 +140,11 @@ Press _Next_.
 
 Now it's time to access your seed phrase.
 
-![Read to access your seed phrase](./seed-phrase-1.png)
+![Read to access your seed phrase](https://raw.githubusercontent.com/gnoverse/gnome-content/refs/heads/main/assets/tutorials/installing-adena-wallet/seed-phrase-1.png)
 
 #### Acknowledge Disclaimer
 
-![Acknowledge Disclaimer](./seed-phrase-2.png)
+![Acknowledge Disclaimer](https://raw.githubusercontent.com/gnoverse/gnome-content/refs/heads/main/assets/tutorials/installing-adena-wallet/seed-phrase-2.png)
 
 Click the checkbox to acknowledge what was already covered in the questionnaire -- Adena can not recover the seed phrase for you.
 
@@ -152,37 +152,37 @@ Then press _Reveal Seed Phrase_.
 
 #### Reveal Seed Phrase
 
-![Reveal Seed Phrase](./seed-phrase-3.png)
+![Reveal Seed Phrase](https://raw.githubusercontent.com/gnoverse/gnome-content/refs/heads/main/assets/tutorials/installing-adena-wallet/seed-phrase-3.png)
 
 Adena is ready to show you your seed phrase (which it generates randomly). Press the _Hold to Reveal_ button until it is fully blue. Your seed phrase will be revealed.
 
 #### Save Seed Phrase
 
-![Save Seed Phrase](./seed-phrase-4.png)
+![Save Seed Phrase](https://raw.githubusercontent.com/gnoverse/gnome-content/refs/heads/main/assets/tutorials/installing-adena-wallet/seed-phrase-4.png)
 
 Copy your seed phrase to a secure offline storage location.
 
 #### Acknowledge Saving the Seed Phrase
 
-![Acknowledge Saving the Seed Phrase](./seed-phrase-5.png)
+![Acknowledge Saving the Seed Phrase](https://raw.githubusercontent.com/gnoverse/gnome-content/refs/heads/main/assets/tutorials/installing-adena-wallet/seed-phrase-5.png)
 
 Once you have saved your seed phrase, click this check box, and press _Next_.
 
 ### **Create your Password**
 
-![Create Your Password](./create-password-1.png)
+![Create Your Password](https://raw.githubusercontent.com/gnoverse/gnome-content/refs/heads/main/assets/tutorials/installing-adena-wallet/create-password-1.png)
 
 The last step is to create the password for your account. This is just like creating a password for any other system. Ensure that you provide a strong, secure password.
 
 #### Save Your Password
 
-![Save Your Password](./create-password-2.png)
+![Save Your Password](https://raw.githubusercontent.com/gnoverse/gnome-content/refs/heads/main/assets/tutorials/installing-adena-wallet/create-password-2.png)
 
 Once your password has been created, click the checkbox and press _Save_.
 
 ## **Conclusion and Next Steps**
 
-![Your Account Is Created](./account-created.png)
+![Your Account Is Created](https://raw.githubusercontent.com/gnoverse/gnome-content/refs/heads/main/assets/tutorials/installing-adena-wallet/account-created.png)
 
 And there you have it\! You've installed the Adena Wallet and created your first gno.land account. You now have a tool that you will need to interact with live gno.land networks.
 
