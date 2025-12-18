@@ -1,2 +1,3 @@
-# gnome-content
-This repository is the independent content repository for the GNO.ME project.
+# Gnome Content
+
+This repository is a content repository for tutorials written by Gnomes.
