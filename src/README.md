@@ -1,1 +1,1 @@
-This directory will contain subdirectories with example code from the tutorials.
+This directory contains directories with example code from the tutorials.
