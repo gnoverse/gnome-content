@@ -1,17 +1,3 @@
----
-{
-  "title": "Write a DAO Smart Contract - Part 2",
-  "slug": "write-a-dao-smart-contract-part-2",
-  "tags": ["gnoland", "gno", "dao"],
-  "level": "Intermediate",
-  "author": "Jerónimo Albi",
-  "authorAddress": "g1hy6zry03hg5d8le9s2w4fxme6236hkgd928dun",
-  "contributors": ["Kirk Haines"],
-  "contributorAddresses": ["g1whzkakk4hzjkvy60d5pwfk484xu67ar2cl62h2"],
-  "summary": "In this two parts tutorial we explore one way to write a DAO smart contract. The tutorials will guide you though creating an executable proposal to add and remove DAO members."
-}
----
-
 ## Overview
 
 This second part of the "Write a DAO Smart Contract" tutorial will explore how to add and remove
@@ -26,111 +12,118 @@ members by using a different type of proposal. It continues where the first part
 ## What You'll Need
 
 - To have read the [first part] of this tutorial
-- Understanding of [Gno language](https://gno-by-example.com/)
+- Understanding of [Gno language](https://docs.gno.land/)
 - Knowledge on how to deploy realms and packages using [Gno Playground] or [gnokey]
 - Knowledge on how to interact with realms using [Gno Connect] or [gnokey]
 
 ## Executable Proposals
 
-It is useful to be able to change the members of the DAO by adding new members
-or removing existing ones. One way to support this is though the implementation of a new type of
-proposal that when approved would make the necessary changes to the DAO. This type of proposal is
-called executable.
+It's useful to be able to change the members of the DAO by adding new members or removing existing
+ones. One way to support this is though the implementation of a new type of proposal that when
+approved would make the necessary changes to the DAO. This type of proposal is called executable.
 
 The steps needed to change DAO members using this new proposal type start by creating a new
 proposal to modify the DAO members, then voting on it and waiting until the voting deadline is met.
-Once that happens, the proposal could be executed at any time to modify the members.
+Once that happens, the proposal could be executed at any time to effectively modify the members.
 
-The [gno.land/p/gnome/dao] package allows defining executable proposal types by implementing
+The [gno.land/p/nt/commondao] package allows defining executable proposal types by implementing
 the following interface:
 
 ```go
-type Executer interface {
-	// Execute executes the proposal.
-	// The DAO argument is the DAO where the proposal was created.
-	Execute(*DAO) error
+type Executable interface {
+    // Execute executes the proposal
+    Execute(realm) error
 }
 ```
 
-### Executable Proposal Strategy
+### Executable Proposal Definition
 
-Proposal strategies that implement the `Execute()` method are able to modify the state after the
+Proposal definitions that implement the `Execute()` method are able to modify the state after the
 proposal is approved and executed when the voting deadline is met.
 
 Let's define a new proposal strategy that adds or removes DAO members after it's approval by creating
-a `proposals_members.gno` file:
+a `proposal_members.gno` file:
 
 ```go
 package mydao
 
 import (
-	"time"
+    "errors"
+    "strings"
+    "time"
 
-	gnome "gno.land/p/gnome/dao/v2"
+    "gno.land/p/nt/commondao"
 )
 
-func newModifyMembersStrategy(newMembers, removeMembers []gnome.Member) modifyMembersStrategy {
-	// Make sure that at least a member would be added or removed
-	if len(newMembers) == 0 && len(removeMembers) == 0 {
-		panic("members are required")
-	}
-
-	return modifyMembersStrategy{
-		newMembers:    newMembers,
-		removeMembers: removeMembers,
-	}
+type modifyMembersDefinition struct {
+    newMembers, removeMembers []address
 }
 
-type modifyMembersStrategy struct {
-	newMembers, removeMembers []gnome.Member
+func (p modifyMembersDefinition) Title() string             { return "Modify Members" }
+func (modifyMembersDefinition) VotingPeriod() time.Duration { return time.Hour * 24 * 7 }
+
+func (p modifyMembersDefinition) Body() string {
+    var b strings.Builder
+
+    // When there are new members add a section title and list the members to add
+    if len(p.newMembers) > 0 {
+        b.WriteString("## New Members\n")
+    }
+
+    for _, m := range p.newMembers {
+        b.WriteString("- " + m.String() + "\n")
+    }
+
+    // When there are members to remove add a section title and list the members to remove
+    if len(p.removeMembers) > 0 {
+        b.WriteString("## Remove Members\n")
+    }
+
+    for _, m := range p.removeMembers {
+        b.WriteString("- " + m.String() + "\n")
+    }
+
+    // Return the Markdown that renders the body of the proposal
+    return b.String()
 }
 
-func (modifyMembersStrategy) Name() string {
-	return "modify-members"
+func (modifyMembersDefinition) Tally(ctx commondao.VotingContext) (bool, error) {
+    // Check if a quorum of 2/3s has been met
+    if !commondao.IsQuorumReached(commondao.QuorumTwoThirds, ctx.VotingRecord, ctx.Members) {
+        return false, commondao.ErrNoQuorum
+    }
+
+    // Tally votes by a super majority of 2/3s
+    c, success := commondao.SelectChoiceBySuperMajority(ctx.VotingRecord, ctx.Members.Size())
+    if success {
+        return c == commondao.ChoiceYes, nil
+    }
+    return false, nil
 }
 
-func (modifyMembersStrategy) Quorum() float64 {
-	return 0.51
-}
+func (p modifyMembersDefinition) Execute(realm) error {
+    // Add each one of the new members to the DAO
+    for _, m := range p.newMembers {
+        if !myDAO.Members().Add(m) {
+            return errors.New("address is already a member: " + m.String())
+        }
+    }
 
-func (modifyMembersStrategy) VotingPeriod() time.Duration {
-	// TODO: Replace by a smaller time frame if you want to try or demo general proposals
-	return time.Hour * 24 * 7
-}
-
-func (modifyMembersStrategy) VoteChoices() []gnome.VoteChoice {
-	return []gnome.VoteChoice{gnome.ChoiceYes, gnome.ChoiceNo}
-}
-
-func (modifyMembersStrategy) Tally(dao *gnome.DAO, r gnome.VotingRecord) gnome.VoteChoice {
-	// Count all members vs the votes to consider abstentions to make the majority absolute
-	abstentions := len(dao.Members()) - r.VoteCount()
-
-	if choice, ok := gnome.SelectChoiceByMajority(r, abstentions); ok {
-		return choice
-	}
-	return gnome.ChoiceNone
-}
-
-func (s modifyMembersStrategy) Execute(dao *gnome.DAO) error {
-	for _, m := range s.newMembers {
-		dao.AddMember(m)
-	}
-
-	for _, m := range s.removeMembers {
-		dao.RemoveMember(m.Address)
-	}
-	return nil
+    // Remove each one of the members to remove from the DAO
+    for _, m := range p.removeMembers {
+        if !myDAO.Members().Remove(m) {
+            return errors.New("address not found: " + m.String())
+        }
+    }
+    return nil
 }
 ```
 
 > It's important to mention that you might want to change the voting period to a smaller time frame
-> if you intend to try or demo the proposal, otherwise you would have to wait a week to be able to
-> finalize the proposal.
+> if you intend to try or demo the proposal.
 
-Pay special attention to the `Execute()` method, which will be called after the
-proposal passes. It adds or removes members from the DAO where the proposal was created.
-The other strategy methods were already explained in the [first part] of the tutorial.
+Pay special attention to the `Execute()` method, which will be called after the proposal passes.
+The other proposal definition methods were already explained in the [first part] of the tutorial.
 
 ## Public Realm Functions
 
@@ -140,6 +133,40 @@ is met.
 
 ### Create Modify DAO Member Proposal
 
+Firts, a helper function to parse one or more addresses from a string into actual addresses is
+required to be able to call the function using simple data types, for example when calling it
+using [Gno Connect].
+
+To do so define a `mustParseStringToAddresses()` function at the end of the `public.gno` file:
+
+```go
+// mustParseStringToAddresses parses a mulitiline text of addresses into a list.
+func mustParseStringToAddresses(s string) []address {
+    if s == "" {
+        return nil
+    }
+
+    var members []address
+    for _, raw := range strings.Split(s, "\n") {
+        // Remove empty leading and trailing spaces
+        raw = strings.TrimSpace(raw)
+        if raw == "" {
+	    continue
+        }
+
+        // Cast the string into an address and make sure address has the right format
+        addr := address(raw)
+        if !addr.IsValid() {
+	    panic("invalid address: " + addr.String())
+        }
+
+	// Add current address to the list of addresses
+        members = append(members, addr)
+    }
+    return members
+}
+```
+
 To allow DAO members to create new _modify members_ proposals, define a
 `CreateModifyMembersProposal()` function at the end of the `public.gno` file:
 
@@ -147,8 +174,6 @@ To allow DAO members to create new _modify members_ proposals, define a
 // CreateModifyMembersProposal creates a proposal to modify DAO members.
 //
 // Arguments:
-// - title: A title for the proposal
-// - description: A description for the proposal
 // - newMembers: List of member addresses to add to the DAO
 // - removeMembers: List of member addresses to remove from the DAO
 //
@@ -158,68 +183,51 @@ To allow DAO members to create new _modify members_ proposals, define a
 // g187982000zsc493znqt828s90cmp6hcp2erhu6m
 // g1jg8mtutu9khhfwc4nxmuhcpftf0pajdhfvsqf5
 // ```
-func CreateModifyMembersProposal(title, description, newMembers, removeMembers string) uint64 {
-	// Check that the original caller is a member of the DAO
-	caller := std.GetOrigCaller()
-	assertIsMember(caller)
+func CreateModifyMembersProposal(_ realm, newMembers, removeMembers string) uint64 {
+    // Check that the original caller is a member of the DAO
+    caller := runtime.OriginCaller()
+    assertIsMember(caller)
 
-	// Create a new proposal that uses the modify members strategy
-	id := generateProposalID()
-	strategy := newModifyMembersStrategy(
-		gnome.MustParseStringToMembers(newMembers),
-		gnome.MustParseStringToMembers(removeMembers),
-	)
-	p, err := gnome.NewProposal(
-		id,
-		strategy,
-		caller,
-		myDAO,
-		title,
-		gnome.WithDescription(description),
-	)
-	if err != nil {
-		panic(err)
-	}
+    // Make sure that at least a member would be added or removed
+    membersAdd := mustParseStringToAddresses(newMembers)
+    membersRemove := mustParseStringToAddresses(removeMembers)
+    if len(membersAdd) == 0 && len(membersAdd) == 0 {
+        panic("members are required")
+    }
 
-	// Append the new proposal to the list of proposals
-	proposals = append(proposals, p)
+    // Create a new proposal that uses the general definition
+    p, err := myDAO.Propose(caller, modifyMembersDefinition{
+        membersAdd,
+        membersRemove,
+    })
+    if err != nil {
+        panic(err)
+    }
 
-	return uint64(p.ID())
+    return uint64(p.ID())
 }
 ````
 
 This function receives one or more member addresses that should be added or removed from the DAO
-when the proposal is approved.
+after the proposal is approved, when proposal is executed.
 
 ### Create a Public Realm Function to Execute Proposals
 
 To allow executing proposals define an `Execute()` function at the end of the `public.gno` file:
 
 ```go
-// Execute carries out an active proposal.
-func Execute(proposalID uint64) string {
-	// Check that the original caller is a member of the DAO
-	caller := std.GetOrigCaller()
-	assertIsMember(caller)
+// Execute executes active proposals.
+func Execute(_ realm, proposalID uint64) string {
+    caller := runtime.OriginCaller()
+    assertIsMember(caller)
 
-	// Get the proposal and validate that the voting deadline is met
-	p := mustGetProposal(gnome.ID(proposalID))
-	if !p.HasVotingDeadlinePassed() {
-		panic("proposal's voting deadline must be met before execution")
-	}
+    p := mustGetProposal(proposalID)
+    err := myDAO.Execute(p.ID())
+    if err != nil {
+        panic(err)
+    }
 
-	// Tally votes and update proposal's status
-	if err := p.Tally(); err != nil {
-		panic(err)
-	}
-
-	// Execute proposal.
-	// Execution detects if a proposal is executable and when it's not it skips execution.
-	if err := p.Execute(); gnome.IsExecutionError(err) {
-		p.Fail("execution failed: " + err.Error())
-	}
-
-	return "Proposal executed successfully"
+    return "Proposal executed successfully"
 }
 ```
 
@@ -232,19 +240,19 @@ Now you can add or remove DAO members by following these steps:
 
 - Deploy your DAO realm to **gno.land**
 - Create a new member modification proposal by calling `CreateModifyMembersProposal()`
-- Vote YES on the new proposal using the current DAO member accounts
+- Vote _YES_ on the new proposal using the current DAO member accounts
 - Once the voting deadline is met execute the proposal by calling `Execute()`
 - Check the list of DAO members in your DAO **gno.land** realm view
 
-From here, you can explore extending the tutorial examples with different use cases. For example, you could
-improve validation. The [gno.land/p/gnome/dao] package has support for proposal
-validation by implementing the `Validator` interface in the proposal strategies.
+From here, you can explore extending the tutorial examples with different use cases. For example,
+you could improve validation. The [gno.land/p/nt/commondao] package has support for proposal
+validation by implementing the `Validator` interface in the proposal definitions.
 
 Other things to explore could be using different tallying methods to count the votes, or even
-creating a tree based DAO, which is also supported by [gno.land/p/gnome/dao].
+creating a tree based DAO, which is also supported by [gno.land/p/nt/commondao].
 
-[first part]: https://gno.land/r/gnome/tutorials:write-a-dao-smart-contract-part-1
-[gno.land/p/gnome/dao]: https://gno.land/p/gnome/dao/v2/
-[Gno Connect]: https://gno.studio/connect
+[first part]: https://gno.land/r/jeronimoalbi/blog:posts/write-a-dao-smart-contract-part-1
+[gno.land/p/nt/commondao]: https://gno.land/p/nt/commondao/
+[Gno Connect]: https://gno.studio/connect/
 [Gno Playground]: https://play.gno.land/
-[gnokey]: https://docs.gno.land/gno-tooling/cli/gnokey/
+[gnokey]: https://docs.gno.land/users/interact-with-gnokey/

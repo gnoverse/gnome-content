@@ -1,27 +1,16 @@
----
-{
-  "title": "Write a DAO Smart Contract - Part 1",
-  "slug": "write-a-dao-smart-contract-part-1",
-  "tags": ["gnoland", "gno", "dao"],
-  "level": "Intermediate",
-  "author": "Jerónimo Albi",
-  "authorAddress": "g1hy6zry03hg5d8le9s2w4fxme6236hkgd928dun",
-  "summary": "In this two parts tutorial we explore one way to write a DAO smart contract. The tutorial will guide you though creating a DAO and a general proposal."
-}
----
 ## Overview
 
-This two parts tutorial explores one way to create a non-token based DAO that allows the creation of
-general proposals, also known as text proposals, where the initial set of DAO members are defined
-within the realm source code. The second part of this tutorial will explore how to add and remove
-members by using a different type of proposal.
+This two parts tutorial explores one way to create a non-token based DAO that allows the creation
+of general proposals, also known as text proposals, where the initial set of DAO members are
+defined within the realm source code. The second part of this tutorial will explore how to add and
+remove members by using a different type of proposal.
 
-Tutorial uses the pure [gno.land/p/gnome/dao] package to define the DAO and the different types
-or proposals. This package already define for us the types and features needed to create tree based
-DAOs.
+Tutorial uses the pure [gno.land/p/nt/commondao] package to define the DAO and the different types
+or proposals. This package already define for us the types and features needed to create single or
+tree based DAOs.
 
 The final DAO implementation aims to be as simple as possible to give you a example or starting
-point to help you build your own tree based DAO.
+point to help you build your own DAO.
 
 While going though the tutorial try to find the places that you could improve or where you could
 extend the DAO functionality with features that would be useful for your use case.
@@ -34,10 +23,10 @@ extend the DAO functionality with features that would be useful for your use cas
 
 ## What You'll Need
 
-- Understanding of [Gno language](https://gno-by-example.com/)
+- Understanding of [Gno language](https://docs.gno.land/)
 - Access and familiarity with [Gno Playground]
 - [Adena wallet](https://www.adena.app/) installed in your browser
-- Three accounts created in Adena wallet
+- **Three accounts** created in Adena wallet
 - Knowledge on how to deploy realms and packages using [Gno Playground] or [gnokey]
 - Knowledge on how to interact with realms using [Gno Connect] or [gnokey]
 
@@ -53,31 +42,40 @@ To create the DAO open [Gno Playground] and create a new `dao.gno` file:
 ```go
 package mydao
 
-import (
-	"std"
+import "gno.land/p/nt/commondao"
 
-	gnome "gno.land/p/gnome/dao/v2"
+var myDAO = commondao.New(
+    commondao.WithSlug("mydao"),
+    commondao.WithName("MyDAO"),
+    // TODO: Replace these three addresses with you account addresses
+    commondao.WithMember("g1lyzcpa7duh69lk04nahxup484xrz4k6k2nqdun"),
+    commondao.WithMember("g125t352u4pmdrr57emc4pe04y40sknr5ztng5mt"),
+    commondao.WithMember("g1zzc479zj8taxd5e4g5mydg4rkpmujg7uflrj8p"),
 )
 
-var myDAO = gnome.MustNew("mydao", "MyDAO", gnome.WithMembers(
-	// TODO: Replace these three addresses with you account addresses
-	gnome.NewMember("g1lyzcpa7duh69lk04nahxup484xrz4k6k2nqdun"),
-	gnome.NewMember("g125t352u4pmdrr57emc4pe04y40sknr5ztng5mt"),
-	gnome.NewMember("g1zzc479zj8taxd5e4g5mydg4rkpmujg7uflrj8p"),
-))
+// mustGetProposal returns a proposal or panics if it doesn't exist
+func mustGetProposal(id uint64) *commondao.Proposal {
+    // Try to get it from the list of active proposals
+    p := myDAO.ActiveProposals().Get(id)
+    if p == nil {
+        panic("proposal not found")
+    }
+
+    return p
+}
 
 // assertIsMember asserts that an address belongs to a DAO member
-func assertIsMember(addr std.Address) {
-	if !myDAO.HasMember(addr) {
-		panic("caller is not a DAO member")
-	}
+func assertIsMember(addr address) {
+    if !myDAO.Members().Has(addr) {
+        panic("caller is not a DAO member")
+    }
 }
 ```
 
 > Gno Playground always creates an example `package.gno` file. This file **must** be deleted
 > after creating the `dao.gno` file.
 
-> Also it is recommended that you save your code using Gno Playground's save as draft feature when
+> Also it's recommended that you save your code using Gno Playground's save as draft feature when
 > files are created or modified to avoid loosing your changes.
 
 The DAO is created with `mydao` as identifier and "MyDAO" as name.
@@ -86,48 +84,6 @@ You should change the member addresses in the example Gno code by the three init
 addresses that you defined in your Adena wallet, otherwise you won't be able to create proposals in
 your DAO and vote on them.
 
-## Proposals Support
-
-The DAO could potentially define multiple types of proposals apart from the general proposal type
-that is going to be defined in this tutorial, so we have to define a variable to keep track of all
-these proposals. Also, each proposal must have a unique numeric idetifier that has to be
-sequentially generated when new proposals are created.
-
-To add support for proposals create a `proposals.gno` file:
-
-```go
-package mydao
-
-import (
-	gnome "gno.land/p/gnome/dao/v2"
-)
-
-var (
-	// proposals stores all DAO proposals
-	proposals []*gnome.Proposal
-
-	// lastProposalID keeps track of the last created proposal ID
-	lastProposalID gnome.ID
-)
-
-// generateProposalID generates proposal IDs incrementally
-func generateProposalID() gnome.ID {
-	lastProposalID += 1
-	return lastProposalID
-}
-
-// mustGetProposal returns a proposal or panics if it doesn't exist
-func mustGetProposal(id gnome.ID) *gnome.Proposal {
-	for _, p := range proposals {
-		if p.ID() == id {
-			return p
-		}
-	}
-
-	panic("proposal not found")
-}
-```
-
 ## Views
 
 Gno.land realms optionally support rendering views by defining a public realm function called
@@ -135,8 +91,8 @@ Gno.land realms optionally support rendering views by defining a public realm fu
 are going to render two views, one to display DAO information and another to display information
 for specific proposals.
 
-The `Render(path string)` function receives a single argument called `path` which is a string
-containing a path that we will use to render Markdown for the DAO or a proposal.
+The `Render(path string) string` function receives a single argument called `path` which is a
+string containing a path that we will use to render Markdown for the DAO or a proposal.
 
 By default when there is no path we will render the DAO, otherwise we will expect the path to be a
 number which will be used as proposal ID.
@@ -144,25 +100,29 @@ number which will be used as proposal ID.
 Define the `Render()` function by creating a `render.gno` file:
 
 ```go
+package mydao
+
 import (
     "strconv"
     "strings"
+
+    "gno.land/p/nt/commondao"
 )
 
 // Render returns the Markdown for the corresponding view path.
 func Render(path string) string {
-	// When the path is empty render the DAO view
-	if path == "" {
-		return renderDAO()
-	}
+    // When the path is empty render the DAO view
+    if path == "" {
+        return renderDAO()
+    }
 
-	// Otherwise the path must contain a number with a proposal ID
-	proposalID, err := strconv.Atoi(path)
-	if err != nil {
-		panic("invalid proposal ID")
-	}
+    // Otherwise the path must contain a number with a proposal ID
+    proposalID, err := strconv.ParseUint(path, 10, 64)
+    if err != nil {
+        panic("invalid proposal ID")
+    }
 
-	return renderProposal(gnome.ID(proposalID))
+    return renderProposal(proposalID)
 }
 ```
 
@@ -172,25 +132,28 @@ to read. Each one of these two functions will focus either on the DAO view or th
 ### DAO View
 
 As mentioned before, this is the function that is called by default when visiting your realm in the
-[gno.land] website. For example if yout DAO realm is deployed under the `gno.land/r/gnome/examples/mydao`
-path, calling `https://gno.land/r/gnome/examples/mydao` would render the DAO view.
+[gno.land] website.
+
+For example if yout DAO realm is deployed under `gno.land/r/jeronimoalbi/examples/mydao` path,
+calling `https://gno.land/r/jeronimoalbi/examples/mydao` would render the DAO view.
 
 To implement the DAO view add the `renderDAO()` function at the end of the `render.gno` file:
 
 ```go
 func renderDAO() string {
-	var output strings.Builder
+    var output strings.Builder
 
-	// Use the DAO name as title
-	output.WriteString("# " + myDAO.Title() + "\n")
-	output.WriteString("## Members\n")
+    // Use the DAO name as title
+    output.WriteString("# " + myDAO.Name() + "\n")
 
-	// Add the list of DAO member addresses
-	for _, m := range myDAO.Members() {
-		output.WriteString("- " + m.Address.String() + "\n")
-	}
+    // Add the list of DAO member addresses
+    output.WriteString("## Members\n")
+    myDAO.Members().IterateByOffset(0, myDAO.Members().Size(), func(member address) bool {
+        output.WriteString("- " + member.String() + "\n")
+        return false
+    })
 
-	return output.String()
+    return output.String()
 }
 ```
 
@@ -201,9 +164,11 @@ strings multiple times and get the concatenation as output by calling the `Strin
 ### Proposal View
 
 Rendering this view requires a render path to be specified when visiting your realm in the
-[gno.land] website. For example if your DAO realm is deployed under the `gno.land/r/gnome/examples/mydao`
-path, calling `https://gno.land/r/gnome/examples/mydao:1` would render the view for the proposal with
-ID 1.
+[gno.land] website.
+
+For example if your DAO realm is deployed under `gno.land/r/jeronimoalbi/examples/mydao` path,
+calling `https://gno.land/r/jeronimoalbi/examples/mydao:1` would render the view for the proposal
+with ID 1.
 
 > Notice that the render path is written after the colon ":" and for this tutorial it is expected to
 > be a number which is used to find a proposal by ID.
@@ -211,117 +176,109 @@ ID 1.
 To implement the proposal view add the `renderProposal()` function at the end of the `render.gno` file:
 
 ```go
-func renderProposal(id gnome.ID) string {
-	var (
-		output strings.Builder
-		p      = mustGetProposal(id)
-	)
+func renderProposal(id uint64) string {
+    var (
+        output strings.Builder
+        p      = mustGetProposal(id)
+    )
 
-	// Use the proposal title and ID as title
-	output.WriteString("# Proposal #" + p.ID().String() + ": " + p.Title() + "\n")
+    // Use proposal's title and ID as title
+    output.WriteString("# Proposal #" + strconv.FormatUint(p.ID(), 10) + ": " + p.Definition().Title() + "\n")
 
-	// Add important proposal values
-	output.WriteString("- Type: " + p.Strategy().Name() + "\n")
-	output.WriteString("- Created: " + p.CreatedAt().UTC().Format("2006-01-02 15:04 MST") + "\n")
-	output.WriteString("- Proposer: " + p.Proposer().String() + "\n")
-	output.WriteString("- Status: " + p.Status().String() + "\n")
-	output.WriteString("\n" + p.Description() + "\n")
+    // Add important proposal values
+    output.WriteString("- Created: " + p.CreatedAt().UTC().Format("2006-01-02 15:04 MST") + "\n")
+    output.WriteString("- Proposer: " + p.Creator().String() + "\n")
+    output.WriteString("- Status: " + string(p.Status()) + "\n")
+    output.WriteString("\n" + p.Definition().Body() + "\n")
 
-	// Add the number of votes for each one of the voted choices
-	output.WriteString("\n## Votes\n")
-	record := p.VotingRecord()
-	if record.VoteCount() == 0 {
-		output.WriteString("Proposal has no votes\n")
-	} else {
-		record.Iterate(func(c gnome.VoteChoice, count uint) bool {
-			output.WriteString("- " + string(c) + ": " + strconv.FormatUint(uint64(count), 10) + "\n")
-			return false
-		})
-	}
+    // Add the number of votes for each one of the voted choices
+    output.WriteString("\n## Votes\n")
+    record := p.VotingRecord()
+    if record.Size() == 0 {
+        output.WriteString("Proposal has no votes\n")
+    } else {
+        record.IterateVotesCount(func(c commondao.VoteChoice, voteCount int) bool {
+            output.WriteString("- " + string(c) + ": " + strconv.Itoa(voteCount) + "\n")
+            return false
+        })
+    }
 
-	return output.String()
+    return output.String()
 }
 ```
 
 This function is a bit more complex than the DAO one but it follows the same idea, it generates
 Markdown containing the most important and minimal imformation for a proposal.
 
-## General Proposal Strategy
+## General Proposal Definition
 
-The [gno.land/p/gnome/dao] package allows the definition of different proposal types though the
-implementation of strategies.
+The [gno.land/p/nt/commondao] package allows the definition of different proposal types though the
+implementation of proposal definitions.
 
-The following is the minimal interface that has to be implemented to create a new strategy type:
+The following is the minimal interface that has to be implemented to create a new proposal type:
 
 ```go
-type ProposalStrategy interface {
-	// Name returns the name of the strategy.
-	Name() string
+type ProposalDefinition interface {
+    // Title returns the proposal title.
+    Title() string
 
-	// Quorum returns the minimum required percentage of DAO member votes
-	// required for a proposal to pass.
-	Quorum() float64
+    // Body returns proposal's body.
+    // It usually contains description or values that are specific to the proposal,
+    // like a description of the proposal's motivation or the list of values that
+    // would be applied when the proposal is approved.
+    Body() string
 
-	// VotingPeriod returns the period that a proposal should allow voting.
-	VotingPeriod() time.Duration
+    // VotingPeriod returns the period where votes are allowed after proposal creation.
+    // It is used to calculate the voting deadline from the proposal's creationd date.
+    VotingPeriod() time.Duration
 
-	// VoteChoices returns the valid voting choices for the strategy.
-	VoteChoices() []VoteChoice
-
-	// Tally counts the votes and returns the winner voting choice.
-	Tally(*DAO, VotingRecord) VoteChoice
+    // Tally counts the number of votes and verifies if proposal passes.
+    // It receives a voting context containing a readonly record with the votes
+    // that has been submitted for the proposal and also the list of DAO members.
+    Tally(VotingContext) (passes bool, _ error)
 }
 ```
 
-The `VoteChoice` type is essentially a string containing the voted choice, which for this tutorial
-can be either "yes" or "no".
+The `VotingContext` type contains the voting record where submitted votes are stored and the
+list of DAO members. The voting context must be used to tally the votes, but it can also be
+used to check quorum for example.
 
-To define a general strategy create a `proposals_general.gno` file:
+To define a general proposal definition create a `proposal_general.gno` file:
 
 ```go
-import (
-	"time"
+package mydao
 
-	gnome "gno.land/p/gnome/dao/v2"
+import (
+    "time"
+
+    "gno.land/p/nt/commondao"
 )
 
-func newGeneralStrategy() generalStrategy {
-	return generalStrategy{}
+type generalDefinition struct {
+    title, description string
 }
 
-type generalStrategy struct {}
+func (p generalDefinition) Title() string             { return p.title }
+func (p generalDefinition) Body() string              { return p.description }
+func (generalDefinition) VotingPeriod() time.Duration { return time.Hour * 24 * 4 }
 
-func (generalStrategy) Name() string {
-	return "general"
-}
+func (generalDefinition) Tally(ctx commondao.VotingContext) (bool, error) {
+    // Check if a quorum of 50% has been met
+    if !commondao.IsQuorumReached(commondao.QuorumHalf, ctx.VotingRecord, ctx.Members) {
+        return false, commondao.ErrNoQuorum
+    }
 
-func (generalStrategy) Quorum() float64 {
-	return 0.51
-}
-
-func (generalStrategy) VotingPeriod() time.Duration {
-	// TODO: Replace by a smaller time frame if you want to try or demo general proposals
-	return time.Hour * 24 * 2
-}
-
-func (generalStrategy) VoteChoices() []gnome.VoteChoice {
-	return []gnome.VoteChoice{gnome.ChoiceYes, gnome.ChoiceNo}
-}
-
-func (generalStrategy) Tally(dao *gnome.DAO, r gnome.VotingRecord) gnome.VoteChoice {
-	// Count all members vs the votes to consider abstentions to make the majority absolute
-	abstentions := len(dao.Members()) - r.VoteCount()
-
-	if choice, ok := gnome.SelectChoiceByMajority(r, abstentions); ok {
-		return choice
-	}
-	return gnome.ChoiceNone
+    // Tally votes by absolute majority, which requires 51% votes
+    c, success := commondao.SelectChoiceByAbsoluteMajority(ctx.VotingRecord, ctx.Members.Size())
+    if success {
+        return c == commondao.ChoiceYes, nil
+    }
+    return false, nil
 }
 ```
 
 > It's important to mention that you might want to change the voting period to a smaller time frame
-> if you intend to try or demo a general proposal, otherwise you would have to wait two days to be
-> able to finalize the proposal.
+> if you intend to try or demo a general proposal.
 
 Pay special attention to the `Tally()` method which is the one used by the proposals to count the
 votes and decide on a winner choice. Votes can be counted using different rules. For the general
@@ -330,7 +287,7 @@ the required percentage for a voting choice to win.
 
 > Here you could implement a different way for tallying votes.
 
-## Public realm functions
+## Public Realm Functions
 
 Until now the only public realm function that was defined is the `Render()`, so the next step is to
 define the rest of the public function that the DAO realm must expose so users can create general
@@ -342,52 +299,39 @@ To allow DAO members to create new general proposals define a `CreateGeneralProp
 creating a `public.gno` file:
 
 ```go
-import (
-	"std"
-	"strings"
+package mydao
 
-	gnome "gno.land/p/gnome/dao/v2"
+import (
+    "chain/runtime"
+    "strings"
+
+    "gno.land/p/nt/commondao"
 )
 
 // CreateGeneralProposal creates a general proposal.
 //
 // Arguments:
-// - title: A title for the proposal 
+// - title: A title for the proposal
 // - description: A description for the proposal
-func CreateGeneralProposal(title, description string) uint64 {
-	// Proposal description is required, so make sure it's not empty
-	assertDescriptionIsNotEmpty(description)
+func CreateGeneralProposal(_ realm, title, description string) uint64 {
+    // Proposal description and title are required
+    assertTitleIsNotEmpty(title)
+    assertDescriptionIsNotEmpty(description)
 
-	// Check that the original caller is a member of the DAO
-	caller := std.GetOrigCaller()
-	assertIsMember(caller)
+    // Check that the original caller is a member of the DAO
+    caller := runtime.OriginCaller()
+    assertIsMember(caller)
 
-	// Create a new proposal that uses the general strategy
-	id := generateProposalID()
-	strategy := newGeneralStrategy()
-	p, err := gnome.NewProposal(
-		id,
-		strategy,
-		caller,
-		myDAO,
-		title,
-		gnome.WithDescription(description),
-	)
-	if err != nil {
-		panic(err)
-	}
+    // Create a new proposal that uses the general definition
+    p, err := myDAO.Propose(caller, generalDefinition{
+        title,
+        description,
+    })
+    if err != nil {
+        panic(err)
+    }
 
-	// Append the new proposal to the list of proposals
-	proposals = append(proposals, p)
-
-	return uint64(p.ID())
-}
-
-// assertDescriptionIsNotEmpty asserts that a description string is not empty.
-func assertDescriptionIsNotEmpty(desc string) {
-	if strings.TrimSpace(desc) == "" {
-		panic("description should not be empty")
-	}
+    return uint64(p.ID())
 }
 ```
 
@@ -402,30 +346,29 @@ To allow DAO members to vote on any type of proposal define a `Vote()` function 
 // Arguments:
 // - proposalID: ID of the proposal where the vote must be submitted
 // - vote: A string with choice to vote
-func Vote(proposalID uint64, vote string) string {
-	// Check that the original caller is a member of the DAO
-	caller := std.GetOrigCaller()
-	assertIsMember(caller)
+func Vote(_ realm, proposalID uint64, vote string) string {
+    // Check that the original caller is a member of the DAO
+    caller := runtime.OriginCaller()
+    assertIsMember(caller)
+    
+    p := mustGetProposal(proposalID)
+    choice := commondao.VoteChoice(vote)
+    err := myDAO.Vote(caller, p.ID(), choice, "")
+    if err != nil {
+        // When the voted choice is invalid use a custom error message to display valid choices
+        if err == commondao.ErrInvalidVoteChoice {
+            var choices []string
+            for _, c := range p.VoteChoices() {
+                choices = append(choices, string(c))
+            }
 
-	p := mustGetProposal(gnome.ID(proposalID))
-	choice := gnome.VoteChoice(vote)
+            panic("invalid vote choice, valid choices: " + strings.Join(choices, ", "))
+        }
 
-	err := p.Vote(caller, choice, "")
-	if err != nil {
-		// When the voted choice is invalid use a custom error that display valid choices
-		if err == gnome.ErrInvalidVoteChoice {
-			var choices []string
-			for _, c := range p.Strategy().VoteChoices() {
-				choices = append(choices, string(c))
-			}
+        panic(err)
+    }
 
-			panic(err.Error() + ": valid choices: " + strings.Join(choices, ", "))
-		}
-
-		panic(err)
-	}
-
-	return "Vote submitted sucessfully"
+    return "Vote submitted sucessfully"
 }
 ```
 
@@ -435,7 +378,7 @@ Now you are ready to continue with the part 2 of the tutorial to learn how to de
 proposal to add and remove DAO members.
 
 [gno.land]: https://gno.land
-[gno.land/p/gnome/dao]: https://gno.land/p/gnome/dao/v2/
+[gno.land/p/nt/commondao]: https://gno.land/p/nt/commondao/
 [Gno Playground]: https://play.gno.land/
-[Gno Connect]: https://gno.studio/connect
-[gnokey]: https://docs.gno.land/gno-tooling/cli/gnokey/
+[Gno Connect]: https://gno.studio/connect/
+[gnokey]: https://docs.gno.land/users/interact-with-gnokey/
